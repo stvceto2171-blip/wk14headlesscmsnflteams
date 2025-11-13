@@ -1,3 +1,6 @@
+// pages/posts/[id].js
+// ---------------------------------------------------------------
+
 // Import the Layout component from local components folder
 import Layout from '../../components/layout';
 
@@ -35,19 +38,19 @@ export default function Post({ postData }) {
 // Next.js function to specify dynamic routes for all posts
 // Runs at build time to determine which paths/pages to generate
 export async function getStaticPaths() {
-  const paths = getAllPostIds(); // Get array of objects with all post IDs
+  const paths = await getAllPostIds(); // ← FIXED: Added `await`
   return {
-    paths,        // Paths like { params: { id: 'post-id' } }
-    fallback: false, // Any paths not returned here will result in 404
+    paths,
+    fallback: false, // 404 for unknown paths
   };
 }
 
 // Next.js function to fetch data for a specific post at build time
 export async function getStaticProps({ params }) {
-  const postData = await getPostData(params.id); // Fetch post data by ID
+  const postData = await getPostData(params.id); // Already correct
   return {
     props: {
-      postData, // Will be passed to Post() as a prop
+      postData,
     },
   };
 }
