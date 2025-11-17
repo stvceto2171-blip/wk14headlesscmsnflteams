@@ -1,14 +1,42 @@
-// pages/index.js   (plain JavaScript – keep the .js extension)
+// pages/index.js
 import Head from 'next/head';
 import Layout, { siteTitle } from '../components/layout';
 import utilStyles from '../styles/utils.module.css';
 import Link from 'next/link';
 import Date from '../components/date';
 
-import { getSortedPostsData } from '../lib/posts';
+// -------------------------------------------------------------------
+// Helper: fetch posts from the remote WP REST API
+// -------------------------------------------------------------------
+async function fetchPosts() {
+  const endpoint = 'https://dev-cs55nflteams.pantheonsite.io/wp-json/wp/v2/posts';
+
+  // You can add query params here, e.g. ?_fields=id,title,date,custom_field_name
+  const res = await fetch(endpoint, {
+    // Optional: add authentication if your site is protected
+    // headers: { Authorization: `Bearer ${YOUR_TOKEN}` },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch posts: ${res.status} ${res.statusText}`);
+  }
+
+  const posts = await res.json();
+
+  // Transform WP post objects → shape expected by the component
+  return posts.map((post) => ({
+    id: post.id.toString(),
+    // WP returns title.rendered
+    name: post.title?.rendered ?? 'Untitled',
+    // WP returns date in ISO format – our <Date> component accepts that
+    date: post.date,
+    // If you have a custom field called `name` (ACF, etc.)
+    // name: post.acf?.name ?? post.title?.rendered,
+  }));
+}
 
 // -------------------------------------------------------------------
-// Page component – unchanged UI
+// Page component (unchanged UI)
 // -------------------------------------------------------------------
 export default function Home({ allPostsData }) {
   return (
@@ -35,6 +63,7 @@ export default function Home({ allPostsData }) {
           <ul className={utilStyles.list}>
             {allPostsData.map(({ id, date, name }) => (
               <li className={utilStyles.listItem} key={id}>
+                {/* Adjust the link if you have a different post route */}
                 <Link href={`/posts/${id}`}>{name}</Link>
                 <br />
                 <small className={utilStyles.lightText}>
@@ -50,13 +79,24 @@ export default function Home({ allPostsData }) {
 }
 
 // -------------------------------------------------------------------
-// getStaticProps – use the shared lib function
+// getStaticProps – pull data at build time + ISR
 // -------------------------------------------------------------------
 export async function getStaticProps() {
-  const allPostsData = await getSortedPostsData(); // ← from lib/posts.js
+  let allPostsData = [];
+
+  try {
+    allPostsData = await fetchPosts();
+  } catch (err) {
+    console.error('Error fetching posts:', err);
+    // You could also re-throw to trigger a 500 page:
+    // throw err;
+  }
 
   return {
-    props: { allPostsData },
-    revalidate: 600, // 10‑minute ISR
+    props: {
+      allPostsData,
+    },
+    // Re-generate the page in the background every N seconds
+    revalidate: 600, // 10 minutes (adjust as needed)
   };
 }
