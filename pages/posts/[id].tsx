@@ -1,4 +1,4 @@
-// pages/posts/[id].js
+// pages/posts/[id].tsx
 import Layout from '../../components/layout';
 import Head from 'next/head';
 import Date from '../../components/date';
@@ -10,48 +10,54 @@ import utilStyles from '../../styles/utils.module.css';
 async function fetchAllPostIds() {
   const endpoint = 'https://dev-cs55nflteams.pantheonsite.io/wp-json/wp/v2/posts?_fields=id';
   const res = await fetch(endpoint);
-
   if (!res.ok) {
     throw new Error(`Failed to fetch post IDs: ${res.status}`);
   }
-
   const posts = await res.json();
-
-  return posts.map((post) => ({
-    params: { id: post.id.toString() },
-  }));
+  return posts
+    .filter((post: any) => post && post.id)
+    .map((post: any) => ({
+      params: { id: String(post.id) },
+    }));
 }
 
 // -------------------------------------------------------------------
-// Helper: fetch a single post (title, date, rendered HTML, custom name)
+// Helper: fetch a single post – NOW SAFE
 // -------------------------------------------------------------------
 async function fetchPost(id: string) {
   const endpoint = `https://dev-cs55nflteams.pantheonsite.io/wp-json/wp/v2/posts/${id}?_fields=title,date,content`;
   const res = await fetch(endpoint);
 
   if (!res.ok) {
-    // 404 from WP → treat as not found
+    console.warn(`Post ${id} not found: ${res.status}`);
     return null;
   }
 
-  const wpPost = await res.json();
+  let wpPost;
+  try {
+    wpPost = await res.json();
+  } catch (err) {
+    console.error(`Failed to parse JSON for post ${id}`);
+    return null;
+  }
+
+  if (!wpPost || typeof wpPost !== 'object' || !wpPost.id) {
+    console.warn(`Invalid post data for ID ${id}:`, wpPost);
+    return null;
+  }
 
   return {
-    id: wpPost.id.toString(),
+    id: String(wpPost.id),
     title: wpPost.title?.rendered ?? 'Untitled',
-    date: wpPost.date,
-    // WP already gives us rendered HTML
+    date: wpPost.date ?? '',
     contentHtml: wpPost.content?.rendered ?? '',
-    // Optional: custom field `name` (ACF, etc.)
-    // name: wpPost.acf?.name ?? wpPost.title?.rendered,
   };
 }
 
 // -------------------------------------------------------------------
-// Page component – unchanged UI
+// Page component
 // -------------------------------------------------------------------
-export default function Post({ postData }) {
-  // 404-style UI when the post is missing
+export default function Post({ postData }: { postData: any }) {
   if (!postData) {
     return (
       <Layout>
@@ -66,18 +72,12 @@ export default function Post({ postData }) {
 
   return (
     <Layout>
-      <Head>
-        <title>{postData.title}</title>
-      </Head>
-
+      <Head><title>{postData.title}</title></Head>
       <article>
         <h1 className={utilStyles.headingXl}>{postData.title}</h1>
-
         <div className={utilStyles.lightText}>
           <Date dateString={postData.date} />
         </div>
-
-        {/* WP content is already sanitized HTML */}
         <div
           className={utilStyles.postContent}
           dangerouslySetInnerHTML={{ __html: postData.contentHtml }}
@@ -88,37 +88,36 @@ export default function Post({ postData }) {
 }
 
 // -------------------------------------------------------------------
-// getStaticPaths – generate paths at build time + ISR
+// getStaticPaths
 // -------------------------------------------------------------------
 export async function getStaticPaths() {
   let paths = [];
-
   try {
     paths = await fetchAllPostIds();
   } catch (err) {
     console.error('getStaticPaths error:', err);
   }
-
   return {
     paths,
-    // New posts will be generated on-demand (SSR → static)
     fallback: 'blocking',
   };
 }
 
 // -------------------------------------------------------------------
-// getStaticProps – fetch the single post
+// getStaticProps – safe params
 // -------------------------------------------------------------------
-export async function getStaticProps({ params }) {
-  const postData = await fetchPost(params.id);
+export async function getStaticProps({ params }: { params: { id?: string } }) {
+  if (!params?.id) {
+    return { notFound: true };
+  }
 
+  const postData = await fetchPost(params.id);
   if (!postData) {
     return { notFound: true };
   }
 
   return {
     props: { postData },
-    // Regenerate in background every 10 minutes
     revalidate: 600,
   };
 }
