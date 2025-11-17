@@ -1,22 +1,61 @@
 // pages/posts/[id].js
-// ---------------------------------------------------------------
 import Layout from '../../components/layout';
-import { getAllPostIds, getPostData } from '../../lib/posts';  // ← FIXED
 import Head from 'next/head';
 import Date from '../../components/date';
 import utilStyles from '../../styles/utils.module.css';
 
-// ------------------------------------------------------------------
-// Default export: Render post or 404 if invalid
-// ------------------------------------------------------------------
+// -------------------------------------------------------------------
+// Helper: fetch *all* post IDs from the remote WP REST API
+// -------------------------------------------------------------------
+async function fetchAllPostIds() {
+  const endpoint = 'https://dev-cs55nflteams.pantheonsite.io/wp-json/wp/v2/posts?_fields=id';
+  const res = await fetch(endpoint);
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch post IDs: ${res.status}`);
+  }
+
+  const posts = await res.json();
+
+  return posts.map((post) => ({
+    params: { id: post.id.toString() },
+  }));
+}
+
+// -------------------------------------------------------------------
+// Helper: fetch a single post (title, date, rendered HTML, custom name)
+// -------------------------------------------------------------------
+async function fetchPost(id: string) {
+  const endpoint = `https://dev-cs55nflteams.pantheonsite.io/wp-json/wp/v2/posts/${id}?_fields=title,date,content`;
+  const res = await fetch(endpoint);
+
+  if (!res.ok) {
+    // 404 from WP → treat as not found
+    return null;
+  }
+
+  const wpPost = await res.json();
+
+  return {
+    id: wpPost.id.toString(),
+    title: wpPost.title?.rendered ?? 'Untitled',
+    date: wpPost.date,
+    // WP already gives us rendered HTML
+    contentHtml: wpPost.content?.rendered ?? '',
+    // Optional: custom field `name` (ACF, etc.)
+    // name: wpPost.acf?.name ?? wpPost.title?.rendered,
+  };
+}
+
+// -------------------------------------------------------------------
+// Page component – unchanged UI
+// -------------------------------------------------------------------
 export default function Post({ postData }) {
-  // If postData is null or missing required fields → show 404-like UI
-  if (!postData || !postData.id) {
+  // 404-style UI when the post is missing
+  if (!postData) {
     return (
       <Layout>
-        <Head>
-          <title>Post Not Found</title>
-        </Head>
+        <Head><title>Post Not Found</title></Head>
         <article>
           <h1 className={utilStyles.headingXl}>Post Not Found</h1>
           <p>Sorry, this post does not exist or is unavailable.</p>
@@ -24,47 +63,62 @@ export default function Post({ postData }) {
       </Layout>
     );
   }
+
   return (
     <Layout>
       <Head>
         <title>{postData.title}</title>
       </Head>
+
       <article>
         <h1 className={utilStyles.headingXl}>{postData.title}</h1>
+
         <div className={utilStyles.lightText}>
           <Date dateString={postData.date} />
         </div>
-        <div dangerouslySetInnerHTML={{ __html: postData.contentHtml }} />
+
+        {/* WP content is already sanitized HTML */}
+        <div
+          className={utilStyles.postContent}
+          dangerouslySetInnerHTML={{ __html: postData.contentHtml }}
+        />
       </article>
     </Layout>
   );
 }
 
-// ------------------------------------------------------------------
-// getStaticPaths: Generate only valid IDs
-// ------------------------------------------------------------------
+// -------------------------------------------------------------------
+// getStaticPaths – generate paths at build time + ISR
+// -------------------------------------------------------------------
 export async function getStaticPaths() {
-  const paths = await getAllPostIds();  // ← FIXED
+  let paths = [];
+
+  try {
+    paths = await fetchAllPostIds();
+  } catch (err) {
+    console.error('getStaticPaths error:', err);
+  }
+
   return {
     paths,
-    fallback: false, // 404 for unknown paths
+    // New posts will be generated on-demand (SSR → static)
+    fallback: 'blocking',
   };
 }
 
-// ------------------------------------------------------------------
-// getStaticProps: Return notFound: true if post missing
-// ------------------------------------------------------------------
+// -------------------------------------------------------------------
+// getStaticProps – fetch the single post
+// -------------------------------------------------------------------
 export async function getStaticProps({ params }) {
-  const postData = await getPostData(params.id);  // ← FIXED
-  // If no post found → return 404
+  const postData = await fetchPost(params.id);
+
   if (!postData) {
-    return {
-      notFound: true,
-    };
+    return { notFound: true };
   }
+
   return {
-    props: {
-      postData,
-    },
+    props: { postData },
+    // Regenerate in background every 10 minutes
+    revalidate: 600,
   };
 }
