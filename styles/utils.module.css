@@ -1,10 +1,4 @@
-.heading2Xl {
-  font-size: 2.5rem;
-  line-height: 1.2;
-  font-weight: 800;
-  letter-spacing: -0.05rem;
-  margin: 1rem 0;
-}
+/* styles/utils.module.css */
 
 .headingXl {
   font-size: 2rem;
@@ -17,7 +11,8 @@
 .headingLg {
   font-size: 1.5rem;
   line-height: 1.4;
-  margin: 1rem 0;
+  font-weight: 700;
+  margin: 2rem 0 1rem;
 }
 
 .headingMd {
@@ -25,16 +20,8 @@
   line-height: 1.5;
 }
 
-.borderCircle {
-  border-radius: 9999px;
-}
-
-.colorInherit {
-  color: inherit;
-}
-
-.padding1px {
-  padding-top: 1px;
+.lightText {
+  color: #666;
 }
 
 .list {
@@ -47,6 +34,27 @@
   margin: 0 0 1.25rem;
 }
 
-.lightText {
-  color: #666;
+.padding1px {
+  padding-top: 1px;
 }
+
+/* ←←← YOUR NEW NFL GRID STYLES – ADD THESE ↓↓↓ */
+.nflGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #f9f9f9;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.nflGrid div {
+  background: white;
+  padding: 1.25rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  line-height: 1.5;
+}
+/* ↑↑↑ END OF YOUR NEW STYLES */
