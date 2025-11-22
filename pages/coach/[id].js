@@ -1,4 +1,4 @@
-// pages/coach/[id].js
+// pages/coaching_staff/[id].js
 import Layout from '../../components/layout';
 import Head from 'next/head';
 import Date from '../../components/date';
@@ -30,21 +30,18 @@ export default function Coach({ coach }) {
   );
 }
 
-// 100% SAFE getStaticPaths – never crashes build, even if endpoint doesn't exist
 export async function getStaticPaths() {
   try {
-    const res = await fetch(`${WP_BASE}/wp-json/wp/v2/coach`, { method: 'GET' });
+    const res = await fetch(`${WP_BASE}/wp-json/wp/v2/coaching_staff`, { method: 'GET' });
 
     if (!res.ok || res.status === 404) {
-      console.log('Coach endpoint not available → using blocking fallback');
+      console.log('Coaching staff endpoint not available → using blocking fallback');
       return { paths: [], fallback: 'blocking' };
     }
 
     const data = await res.json();
 
-    // Guard against non-array responses
     if (!Array.isArray(data)) {
-      console.log('Coach endpoint returned non-array → fallback');
       return { paths: [], fallback: 'blocking' };
     }
 
@@ -54,23 +51,22 @@ export async function getStaticPaths() {
 
     return { paths, fallback: 'blocking' };
   } catch (err) {
-    console.error('getStaticPaths error (coach):', err);
+    console.error('getStaticPaths error (coaching_staff):', err);
     return { paths: [], fallback: 'blocking' };
   }
 }
 
-// getStaticProps – already solid, just slightly cleaned up
 export async function getStaticProps({ params }) {
   try {
-    // Try by ID first (since route is [id].js)
+    // Try by ID first
     let res = await fetch(
-      `${WP_BASE}/wp-json/wp/v2/coach/${params.id}?_fields=id,title,slug,date,acf`
+      `${WP_BASE}/wp-json/wp/v2/coaching_staff/${params.id}?_fields=id,title,slug,date,acf`
     );
 
-    // If not found by ID, try by slug (in case someone visits /coach/john-doe)
+    // If not found by ID, try by slug
     if (!res.ok || res.status === 404) {
       res = await fetch(
-        `${WP_BASE}/wp-json/wp/v2/coach?slug=${params.id}&_fields=id,title,slug,date,acf`
+        `${WP_BASE}/wp-json/wp/v2/coaching_staff?slug=${params.id}&_fields=id,title,slug,date,acf`
       );
     }
 
@@ -78,7 +74,6 @@ export async function getStaticProps({ params }) {
 
     const data = await res.json();
     const item = Array.isArray(data) ? data[0] : data;
-
     if (!item) return { notFound: true };
 
     const coach = {

@@ -13,9 +13,7 @@ export default function PlayersIndex({ players }) {
       <Head>
         <title>NFL Players Roster</title>
       </Head>
-
       <h1 className={utilStyles.headingXl}>Players</h1>
-
       {players.length === 0 ? (
         <p>No players found.</p>
       ) : (
@@ -42,9 +40,20 @@ export default function PlayersIndex({ players }) {
 export async function getStaticProps() {
   try {
     const res = await fetch(
-      `${WP_BASE}/wp-json/wp/v2/player?_fields=id,title,date,slug,acf.position,acf.jersey_number&per_page=100`
+      `${WP_BASE}/wp-json/wp/v2/players?_fields=id,title,date,slug,acf.position,acf.jersey_number&per_page=100`
     );
+
+    if (!res.ok) {
+      console.log('Players endpoint returned error:', res.status);
+      return { props: { players: [] }, revalidate: 60 };
+    }
+
     const posts = await res.json();
+
+    // Safety: ensure it's an array
+    if (!Array.isArray(posts)) {
+      return { props: { players: [] }, revalidate: 60 };
+    }
 
     const players = posts.map((post) => ({
       id: post.id.toString(),
@@ -56,7 +65,7 @@ export async function getStaticProps() {
 
     return {
       props: { players },
-      revalidate: 600, // 10 minutes
+      revalidate: 600,
     };
   } catch (err) {
     console.error('Failed to fetch players:', err);

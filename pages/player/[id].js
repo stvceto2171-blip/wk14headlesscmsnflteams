@@ -10,9 +10,7 @@ export default function Player({ player }) {
   if (!player) {
     return (
       <Layout>
-        <Head>
-          <title>Player Not Found</title>
-        </Head>
+        <Head><title>Player Not Found</title></Head>
         <h1>Player Not Found</h1>
       </Layout>
     );
@@ -20,9 +18,7 @@ export default function Player({ player }) {
 
   return (
     <Layout>
-      <Head>
-        <title>{player.name} | NFL Players</title>
-      </Head>
+      <Head><title>{player.name} | NFL Players</title></Head>
       <article>
         <h1 className={utilStyles.headingXl}>{player.name}</h1>
         <div className={utilStyles.lightText}>
@@ -39,22 +35,18 @@ export default function Player({ player }) {
   );
 }
 
-// SAFE getStaticPaths – never crashes the build
 export async function getStaticPaths() {
   try {
-    const res = await fetch(`${WP_BASE}/wp-json/wp/v2/player`, { method: 'GET' });
+    const res = await fetch(`${WP_BASE}/wp-json/wp/v2/players`, { method: 'GET' });
 
-    // If endpoint doesn't exist or returns error → fall back to on-demand generation
     if (!res.ok) {
-      console.log('Player endpoint not reachable → using blocking fallback');
+      console.log('Players endpoint not reachable → blocking fallback');
       return { paths: [], fallback: 'blocking' };
     }
 
     const data = await res.json();
 
-    // WP sometimes returns an object instead of array when no posts exist
     if (!Array.isArray(data)) {
-      console.log('Player endpoint returned non-array → using blocking fallback');
       return { paths: [], fallback: 'blocking' };
     }
 
@@ -69,11 +61,10 @@ export async function getStaticPaths() {
   }
 }
 
-// getStaticProps stays the same (already safe)
 export async function getStaticProps({ params }) {
   try {
     const res = await fetch(
-      `${WP_BASE}/wp-json/wp/v2/player/${params.id}?_fields=id,title,date,acf`
+      `${WP_BASE}/wp-json/wp/v2/players/${params.id}?_fields=id,title,date,acf`
     );
 
     if (!res.ok) return { notFound: true };

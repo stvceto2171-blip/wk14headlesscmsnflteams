@@ -12,7 +12,6 @@ export default function CoachingStaffIndex({ coaches }) {
       <Head>
         <title>Coaching Staff</title>
       </Head>
-
       <h1>Coaching Staff</h1>
 
       {coaches.length === 0 ? (
@@ -39,9 +38,19 @@ export default function CoachingStaffIndex({ coaches }) {
 export async function getStaticProps() {
   try {
     const res = await fetch(
-      `${WP_BASE}/wp-json/wp/v2/coach?_fields=id,title,slug,acf.role,acf.years_experience&per_page=50`
+      `${WP_BASE}/wp-json/wp/v2/coaching_staff?_fields=id,title,slug,acf.role,acf.years_experience&per_page=50`
     );
+
+    if (!res.ok) {
+      console.log('Coaching staff endpoint error:', res.status);
+      return { props: { coaches: [] }, revalidate: 60 };
+    }
+
     const posts = await res.json();
+
+    if (!Array.isArray(posts)) {
+      return { props: { coaches: [] }, revalidate: 60 };
+    }
 
     const coaches = posts.map((post) => ({
       id: post.id.toString(),
