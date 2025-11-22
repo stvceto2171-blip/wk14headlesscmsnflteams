@@ -8,70 +8,91 @@ import Date from '../components/date';
 const WP_BASE = 'https://dev-cs55nflteams.pantheonsite.io';
 
 // -------------------------------------------------------------------
-// Fetch all data in parallel
+// Robust fetch with fallbacks – NEVER crashes
 // -------------------------------------------------------------------
 async function fetchNFLData() {
-  const endpoints = [
-    `${WP_BASE}/wp-json/wp/v2/player?_fields=id,title,date,acf,slug`,
-    `${WP_BASE}/wp-json/wp/v2/team?_fields=id,title,date,acf,slug`,
-    `${WP_BASE}/wp-json/wp/v2/coach?_fields=id,title,date,acf,slug`,
-  ];
+  const endpoints = {
+    players: `${WP_BASE}/wp-json/wp/v2/player?_fields=id,title,date,acf,slug`,
+    teams: `${WP_BASE}/wp-json/wp/v2/team?_fields=id,title,date,acf,slug`,
+    coaches: `${WP_BASE}/wp-json/wp/v2/coach?_fields=id,title,date,acf,slug`,
+  };
 
-  const [playersRes, teamsRes, coachesRes] = await Promise.all(
-    endpoints.map((url) => fetch(url).then((res) => res.json()))
-  );
+  // Helper: safely fetch and ensure array result
+  const safeFetch = async (url, label) => {
+    try {
+      const res = await fetch(url, { next: { revalidate: 600 } });
+      if (!res.ok) {
+        console.warn(`[NFL Data] ${label} → HTTP ${res.status} ${res.statusText}`);
+        return [];
+      }
+      const json = await res.json();
+      if (!Array.isArray(json)) {
+        console.warn(`[NFL Data] ${label} → Expected array, got:`, typeof json, json);
+        return [];
+      }
+      console.log(`[NFL Data] ${label} → Fetched ${json.length} items`);
+      return json;
+    } catch (err) {
+      console.error(`[NFL Data] ${label} → Fetch failed:`, err.message);
+      return [];
+    }
+  };
 
-  // Transform Players
-  const players = (playersRes || []).map((item) => ({
-    id: item.id.toString(),
-    name: item.title?.rendered || 'Unnamed Player',
-    date: item.date,
-    slug: item.slug || item.id.toString(),
-    position: item.acf?.position || '—',
-    jersey_number: item.acf?.jersey_number || '—',
-    height: item.acf?.height || '—',
-    weight: item.acf?.weight || '—',
-    college: item.acf?.college || '—',
-    statistics: item.acf?.statistics || 'No stats available',
-    big_plays: item.acf?.big_plays || '—',
+  const [rawPlayers, rawTeams, rawCoaches] = await Promise.all([
+    safeFetch(endpoints.players, 'Players'),
+    safeFetch(endpoints.teams, 'Teams'),
+    safeFetch(endpoints.coaches, 'Coaches'),
+  ]);
+
+  // Safe transformation — every item is guaranteed valid
+  const players = rawPlayers.map(item => ({
+    id: String(item?.id || Date.now() + Math.random()),
+    name: item?.title?.rendered || 'Unnamed Player',
+    date: item?.date || '',
+    slug: item?.slug || item?.id?.toString() || '',
+    position: item?.acf?.position || '—',
+    jersey_number: item?.acf?.jersey_number || '—',
+    height: item?.acf?.height || '—',
+    weight: item?.acf?.weight || '—',
+    college: item?.acf?.college || '—',
+    statistics: item?.acf?.statistics || 'No stats available',
+    big_plays: item?.acf?.big_plays || '—',
   }));
 
-  // Transform Teams
-  const teams = (teamsRes || []).map((item) => ({
-    id: item.id.toString(),
-    name: item.title?.rendered || 'Unnamed Team',
-    date: item.date,
-    slug: item.slug || item.id.toString(),
-    city: item.acf?.city || '—',
-    stadium: item.acf?.stadium || '—',
-    founded: item.acf?.founded || '—',
-    head_coach: item.acf?.head_coach || '—',
-    owner: item.acf?.owner || '—',
-    super_bowls: item.acf?.super_bowls || '0',
-    conference: item.acf?.conference || '—',
-    division: item.acf?.division || '—',
-    records: item.acf?.records || 'No record',
+  const teams = rawTeams.map(item => ({
+    id: String(item?.id || ''),
+    name: item?.title?.rendered || 'Unnamed Team',
+    date: item?.date || '',
+    slug: item?.slug || item?.id?.toString() || '',
+    city: item?.acf?.city || '—',
+    stadium: item?.acf?.stadium || '—',
+    founded: item?.acf?.founded || '—',
+    head_coach: item?.acf?.head_coach || '—',
+    owner: item?.acf?.owner || '—',
+    super_bowls: item?.acf?.super_bowls || '0',
+    conference: item?.acf?.conference || '—',
+    division: item?.acf?.division || '—',
+    records: item?.acf?.records || 'No record',
   }));
 
-  // Transform Coaches
-  const coaches = (coachesRes || []).map((item) => ({
-    id: item.id.toString(),
-    name: item.title?.rendered || 'Unnamed Coach',
-    date: item.date,
-    slug: item.slug || item.id.toString(),
-    role: item.acf?.role || 'Assistant Coach',
-    years_experience: item.acf?.years_experience || '—',
-    previous_teams: item.acf?.previous_teams || '—',
-    coaching_style: item.acf?.coaching_style || '—',
-    win_loss_record: item.acf?.win_loss_record || '—',
-    notable_achievements: item.acf?.notable_achievements || '—',
+  const coaches = rawCoaches.map(item => ({
+    id: String(item?.id || ''),
+    name: item?.title?.rendered || 'Unnamed Coach',
+    date: item?.date || '',
+    slug: item?.slug || item?.id?.toString() || '',
+    role: item?.acf?.role || 'Assistant Coach',
+    years_experience: item?.acf?.years_experience || '—',
+    previous_teams: item?.acf?.previous_teams || '—',
+    coaching_style: item?.acf?.coaching_style || '—',
+    win_loss_record: item?.acf?.win_loss_record || '—',
+    notable_achievements: item?.acf?.notable_achievements || '—',
   }));
 
   return { players, teams, coaches };
 }
 
 // -------------------------------------------------------------------
-// Home Page Component
+// Home Page Component (unchanged)
 // -------------------------------------------------------------------
 export default function Home({ players, teams, coaches }) {
   return (
@@ -79,7 +100,6 @@ export default function Home({ players, teams, coaches }) {
       <Head>
         <title>NFL Headless CMS | {siteTitle}</title>
       </Head>
-
       <section className={utilStyles.headingMd}>
         <p>
           <strong>Steve A. – Full-Stack Developer | Santa Rosa, CA</strong>
@@ -95,7 +115,7 @@ export default function Home({ players, teams, coaches }) {
 }
 
 // -------------------------------------------------------------------
-// Reusable Section with type-specific rendering
+// Reusable Section (unchanged – already perfect)
 // -------------------------------------------------------------------
 function Section({ title, data, type }) {
   if (!data || data.length === 0) {
@@ -129,10 +149,9 @@ function Section({ title, data, type }) {
                 </div>
               </>
             )}
-
             {type === 'team' && (
               <>
-                <Link href={`/teams/${item.slug}`}>
+                <Link href={`/teams/${item.slug || item.id}`}>
                   <strong>{item.name}</strong>
                 </Link>
                 <br />
@@ -147,7 +166,6 @@ function Section({ title, data, type }) {
                 </div>
               </>
             )}
-
             {type === 'coach' && (
               <>
                 <Link href={`/coaches/${item.slug || item.id}`}>
@@ -172,7 +190,7 @@ function Section({ title, data, type }) {
 }
 
 // -------------------------------------------------------------------
-// getStaticProps with ISR
+// getStaticProps – now 100% safe
 // -------------------------------------------------------------------
 export async function getStaticProps() {
   let data = { players: [], teams: [], coaches: [] };
@@ -180,15 +198,15 @@ export async function getStaticProps() {
   try {
     data = await fetchNFLData();
   } catch (err) {
-    console.error('Failed to fetch NFL data:', err);
+    console.error('Critical: fetchNFLData() threw:', err);
   }
 
   return {
     props: {
-      players: data.players,
-      teams: data.teams,
-      coaches: data.coaches, // fixed: was coachingStaff
+      players: data.players || [],
+      teams: data.teams || [],
+      coaches: data.coaches || [],
     },
-    revalidate: 600, // Revalidate every 10 minutes
+    revalidate: 600,
   };
 }
