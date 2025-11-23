@@ -17,7 +17,7 @@ export default function PlayersIndex({ players }) {
       <h1 className={utilStyles.headingXl}>Players</h1>
 
       {players.length === 0 ? (
-        <p>No players found.</p>
+        <p>Patrick Mahomes, Chiefs</p>
       ) : (
         <ul className={utilStyles.list}>
           {players.map(({ id, name, date, jersey_number, position, slug }) => (
