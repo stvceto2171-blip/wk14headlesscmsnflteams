@@ -12,15 +12,15 @@ type Coach = {
 export default function CoachPage({ coach }: { coach: Coach | null }) {
   if (!coach) {
     return (
-      <Layout>
+      <Layout home={false}>
         <Head><title>Coach Not Found</title></Head>
-        <h1>Coach Not Found</h1>
+        <article><h1>Coach Not Found</h1></article>
       </Layout>
     );
   }
 
   return (
-    <Layout>
+    <Layout home={false}>
       <Head><title>{coach.title.rendered} | NFL Coach</title></Head>
       <article>
         <h1>{coach.title.rendered}</h1>
@@ -30,7 +30,7 @@ export default function CoachPage({ coach }: { coach: Coach | null }) {
             {Object.entries(coach.acf).map(([key, value]) => {
               const label = key
                 .split('_')
-                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .map(w => w.charAt(0).toUpperCase() + w.slice(1))
                 .join(' ');
 
               return (
@@ -39,8 +39,8 @@ export default function CoachPage({ coach }: { coach: Coach | null }) {
                   <div style={{ marginTop: '0.5rem', lineHeight: '1.7' }}>
                     {typeof value === 'string' && value.trim().startsWith('<') ? (
                       <div dangerouslySetInnerHTML={{ __html: value }} />
-                    ) : value !== null && value !== undefined && value !== '' ? (
-                      <span>{String(value)}</span>
+                    ) : value != null && value !== '' ? (
+                      String(value)
                     ) : (
                       <span style={{ color: '#888' }}>—</span>
                     )}
@@ -74,7 +74,5 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
   const data = await res.json();
   const coach = Array.isArray(data) && data.length > 0 ? data[0] : null;
 
-  return coach
-    ? { props: { coach }, revalidate: 60 }
-    : { notFound: true };
+  return coach ? { props: { coach }, revalidate: 60 } : { notFound: true };
 };
