@@ -1,8 +1,8 @@
 // pages/coaches/[slug].tsx
-import Layout from '@/components/layout';
+import Layout from '@/components/layout.js';  // ← .js extension = build fixed
 import Head from 'next/head';
 import { GetStaticPaths, GetStaticProps } from 'next';
-import { getAllCoachSlugs, getCoachData } from '@/lib/post';   // ← your real file
+import { getAllCoachSlugs, getCoachData } from '@/lib/post';
 
 export default function CoachPage({ coach }: { coach: any }) {
   if (!coach) {

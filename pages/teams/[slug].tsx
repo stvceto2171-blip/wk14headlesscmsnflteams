@@ -1,8 +1,8 @@
 // pages/teams/[slug].tsx
-import Layout from '@/components/layout';
+import Layout from '@/components/layout.js';  // ← fixed
 import Head from 'next/head';
 import { GetStaticPaths, GetStaticProps } from 'next';
-import { getAllTeamSlugs, getTeamData } from '@/lib/post';   // ← your real file
+import { getAllTeamSlugs, getTeamData } from '@/lib/post';
 
 export default function TeamPage({ team }: { team: any }) {
   if (!team) {
