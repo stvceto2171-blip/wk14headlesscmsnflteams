@@ -2,7 +2,7 @@
 import Layout from '@/components/layout';
 import Head from 'next/head';
 import { GetStaticPaths, GetStaticProps } from 'next';
-import { getAllPlayerSlugs, getPlayerData } from '@/lib/post';
+import { getAllPlayerSlugs, getPlayerData } from '@/lib/posts';
 
 export default function PlayerPage({ player }: { player: any }) {
   if (!player) {

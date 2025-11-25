@@ -2,7 +2,7 @@
 import Layout from '@/components/layout';
 import Head from 'next/head';
 import { GetStaticPaths, GetStaticProps } from 'next';
-import { getAllTeamSlugs, getTeamData } from '@/lib/post';
+import { getAllTeamSlugs, getTeamData } from '@/lib/posts';
 
 export default function TeamPage({ team }: { team: any }) {
   if (!team) {

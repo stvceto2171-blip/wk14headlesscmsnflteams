@@ -2,7 +2,7 @@
 import Layout from '@/components/layout';
 import Head from 'next/head';
 import { GetStaticPaths, GetStaticProps } from 'next';
-import { getAllCoachSlugs, getCoachData } from '@/lib/post';
+import { getAllCoachSlugs, getCoachData } from '@/lib/posts';
 
 export default function CoachPage({ coach }: { coach: any }) {
   if (!coach) {
