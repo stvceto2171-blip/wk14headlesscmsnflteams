@@ -27,7 +27,7 @@ export default function TeamPage({ team }: { team: any }) {
             alt={team.title}
             style={{ maxWidth: '100%', borderRadius: '12px', marginBottom: '2rem' }}
           />
-       954        )}
+        )}
 
         <div style={{ marginTop: '3rem', display: 'grid', gap: '1.8rem', fontSize: '1.1rem' }}>
           {Object.entries(team.acf || {}).map(([key, value]) => {
