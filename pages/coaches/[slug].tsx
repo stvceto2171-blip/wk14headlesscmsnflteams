@@ -30,14 +30,21 @@ export default function CoachPage({ coach }: { coach: any }) {
         )}
 
         <div style={{ marginTop: '3rem', display: 'grid', gap: '1.8rem', fontSize: '1.1rem' }}>
-          {Object.entries(coach.acf).map(([key, value]) => {
+          {Object.entries(coach.acf || {}).map(([key, value]) => {
             const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-            if (value && typeof value === 'object' && value.url) {
+            // Proper type guard for ACF image objects
+            const isImageObject = value && typeof value === 'object' && 'url' in value && typeof (value as any).url === 'string';
+
+            if (isImageObject) {
               return (
                 <div key={key}>
                   <strong style={{ color: '#0066cc' }}>{label}:</strong><br />
-                  <img src={value.url} alt={label} style={{ maxWidth: '300px', marginTop: '0.5rem', borderRadius: '8px' }} />
+                  <img
+                    src={(value as any).url}
+                    alt={label}
+                    style={{ maxWidth: '300px', marginTop: '0.5rem', borderRadius: '8px' }}
+                  />
                 </div>
               );
             }

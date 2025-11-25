@@ -27,17 +27,22 @@ export default function TeamPage({ team }: { team: any }) {
             alt={team.title}
             style={{ maxWidth: '100%', borderRadius: '12px', marginBottom: '2rem' }}
           />
-        )}
+       954        )}
 
         <div style={{ marginTop: '3rem', display: 'grid', gap: '1.8rem', fontSize: '1.1rem' }}>
-          {Object.entries(team.acf).map(([key, value]) => {
+          {Object.entries(team.acf || {}).map(([key, value]) => {
             const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            const isImageObject = value && typeof value === 'object' && 'url' in value && typeof (value as any).url === 'string';
 
-            if (value && typeof value === 'object' && value.url) {
+            if (isImageObject) {
               return (
                 <div key={key}>
                   <strong style={{ color: '#0066cc' }}>{label}:</strong><br />
-                  <img src={value.url} alt={label} style={{ maxWidth: '300px', marginTop: '0.5rem', borderRadius: '8px' }} />
+                  <img
+                    src={(value as any).url}
+                    alt={label}
+                    style={{ maxWidth: '300px', marginTop: '0.5rem', borderRadius: '8px' }}
+                  />
                 </div>
               );
             }
