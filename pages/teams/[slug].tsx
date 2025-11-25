@@ -1,5 +1,5 @@
 // pages/teams/[slug].tsx
-import Layout from '@/components/layout.js';
+import Layout from '@/components/layout';
 import Head from 'next/head';
 import { GetStaticPaths, GetStaticProps } from 'next';
 import { getAllTeamSlugs, getTeamData } from '@/lib/post';
