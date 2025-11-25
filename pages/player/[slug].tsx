@@ -1,78 +1,66 @@
-import Layout from '../../components/layout';
+// pages/players/[slug].tsx
+import Layout from '@/components/layout';
 import Head from 'next/head';
 import { GetStaticPaths, GetStaticProps } from 'next';
+import { getAllPlayerSlugs, getPlayerData } from '@/lib/post';  // ← FIXED
 
-type Player = {
-  id: number;
-  title: { rendered: string };
-  slug: string;
-  acf: Record<string, any>;
-};
-
-export default function PlayerPage({ player }: { player: Player | null }) {
+export default function PlayerPage({ player }: { player: any }) {
   if (!player) {
     return (
       <Layout home={false}>
         <Head><title>Player Not Found</title></Head>
-        <article><h1>Player Not Found</h1></article>
+        <h1>Player Not Found</h1>
       </Layout>
     );
   }
 
   return (
     <Layout home={false}>
-      <Head><title>{player.title.rendered} | NFL Player</title></Head>
+      <Head><title>{player.title} | NFL Player</title></Head>
       <article>
-        <h1>{player.title.rendered}</h1>
-
-        {Object.entries(player.acf).length > 0 ? (
-          <div style={{ marginTop: '3rem', display: 'grid', gap: '1.8rem', fontSize: '1.1rem' }}>
-            {Object.entries(player.acf).map(([key, value]) => {
-              const label = key
-                .split('_')
-                .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-                .join(' ');
-
+        <h1>{player.title}</h1>
+        {player.featuredImage && (
+          <img
+            src={player.featuredImage}
+            alt={player.title}
+            style={{ maxWidth: '100%', borderRadius: '12px', marginBottom: '2rem' }}
+          />
+        )}
+        <div style={{ marginTop: '3rem', display: 'grid', gap: '1.8rem', fontSize: '1.1rem' }}>
+          {Object.entries(player.acf).map(([key, value]) => {
+            const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            if (value && typeof value === 'object' && value.url) {
               return (
-                <div key={key} style={{ borderBottom: '1px solid #333', paddingBottom: '1rem' }}>
-                  <strong style={{ color: '#0066cc', fontSize: '1.2rem' }}>{label}:</strong>
-                  <div style={{ marginTop: '0.5rem', lineHeight: '1.7' }}>
-                    {typeof value === 'string' && value.trim().startsWith('<') ? (
-                      <div dangerouslySetInnerHTML={{ __html: value }} />
-                    ) : value != null && value !== '' ? (
-                      String(value)
-                    ) : (
-                      <span style={{ color: '#888' }}>—</span>
-                    )}
-                  </div>
+                <div key={key}>
+                  <strong style={{ color: '#0066cc' }}>{label}:</strong><br/>
+                  <img src={value.url} alt={label} style={{ maxWidth: '300px', marginTop: '0.5rem' }} />
                 </div>
               );
-            })}
-          </div>
-        ) : (
-          <p>No player data available yet.</p>
-        )}
+            }
+            return (
+              <div key={key} style={{ borderBottom: '1px solid #ddd', paddingBottom: '1rem' }}>
+                <strong style={{ color: '#0066cc' }}>{label}:</strong>{' '}
+                {typeof value === 'string' && value.startsWith('<') ? (
+                  <div dangerouslySetInnerHTML={{ __html: value }} />
+                ) : value != null ? String(value) : '—'}
+              </div>
+            );
+          })}
+        </div>
       </article>
     </Layout>
   );
 }
 
-export const getStaticPaths: GetStaticPaths = async () => ({
-  paths: [],
-  fallback: 'blocking',
-});
+export const getStaticPaths: GetStaticPaths = async () => {
+  const paths = await getAllPlayerSlugs();
+  return { paths, fallback: 'blocking' };
+};
 
 export const getStaticProps: GetStaticProps = async ({ params }) => {
   const slug = params?.slug as string;
-  if (!slug) return { notFound: true };
-
-  const res = await fetch(
-    `https://dev-cs55nflteams.pantheonsite.io/wp-json/wp/v2/player?slug=${slug}&acf_format=standard`
-  );
-
-  if (!res.ok) return { notFound: true };
-  const data = await res.json();
-  const player = Array.isArray(data) && data.length > 0 ? data[0] : null;
-
-  return player ? { props: { player }, revalidate: 60 } : { notFound: true };
+  const player = slug ? await getPlayerData(slug) : null;
+  return player
+    ? { props: { player }, revalidate: 60 }
+    : { notFound: true };
 };
