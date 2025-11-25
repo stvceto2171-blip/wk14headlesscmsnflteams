@@ -1,5 +1,5 @@
 // pages/teams/[slug].tsx
-import Layout from '@/components/layout.js';  // ← fixed
+import Layout from '@/components/layout.js';
 import Head from 'next/head';
 import { GetStaticPaths, GetStaticProps } from 'next';
 import { getAllTeamSlugs, getTeamData } from '@/lib/post';
@@ -65,8 +65,5 @@ export const getStaticPaths: GetStaticPaths = async () => {
 export const getStaticProps: GetStaticProps = async ({ params }) => {
   const slug = params?.slug as string;
   const team = slug ? await getTeamData(slug) : null;
-
-  return team
-    ? { props: { team }, revalidate: 60 }
-    : { notFound: true };
+  return team ? { props: { team }, revalidate: 60 } : { notFound: true };
 };

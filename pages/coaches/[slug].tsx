@@ -1,5 +1,5 @@
 // pages/coaches/[slug].tsx
-import Layout from '@/components/layout.js';  // ← .js extension = build fixed
+import Layout from '@/components/layout.js';
 import Head from 'next/head';
 import { GetStaticPaths, GetStaticProps } from 'next';
 import { getAllCoachSlugs, getCoachData } from '@/lib/post';
@@ -65,8 +65,5 @@ export const getStaticPaths: GetStaticPaths = async () => {
 export const getStaticProps: GetStaticProps = async ({ params }) => {
   const slug = params?.slug as string;
   const coach = slug ? await getCoachData(slug) : null;
-
-  return coach
-    ? { props: { coach }, revalidate: 60 }
-    : { notFound: true };
+  return coach ? { props: { coach }, revalidate: 60 } : { notFound: true };
 };
